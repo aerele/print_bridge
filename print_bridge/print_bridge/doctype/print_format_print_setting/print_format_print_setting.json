@@ -1,0 +1,198 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-01-01 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "print_format",
+  "action",
+  "section_scope",
+  "user",
+  "role",
+  "col_break_scope",
+  "company",
+  "section_target",
+  "printer",
+  "printer_group",
+  "section_options",
+  "copies",
+  "copies_from_field",
+  "col_break_opts",
+  "duplex",
+  "color_mode",
+  "paper_size",
+  "tray",
+  "is_raw",
+  "section_auto",
+  "auto_print_on",
+  "workflow_state"
+ ],
+ "fields": [
+  {
+   "fieldname": "print_format",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Print Format",
+   "options": "Print Format",
+   "reqd": 1
+  },
+  {
+   "default": "Download PDF",
+   "fieldname": "action",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Action",
+   "options": "Download PDF\nPrint Directly\nPreview then Print",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_scope",
+   "fieldtype": "Section Break",
+   "label": "Scope (Optional)"
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "User",
+   "options": "User",
+   "description": "Leave blank to apply to all users"
+  },
+  {
+   "fieldname": "role",
+   "fieldtype": "Link",
+   "label": "Role",
+   "options": "Role",
+   "description": "Leave blank to apply to all roles"
+  },
+  {
+   "fieldname": "col_break_scope",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "description": "Leave blank to apply to all companies"
+  },
+  {
+   "fieldname": "section_target",
+   "fieldtype": "Section Break",
+   "label": "Target Printer"
+  },
+  {
+   "fieldname": "printer",
+   "fieldtype": "Link",
+   "label": "Printer",
+   "options": "Print Bridge Printer",
+   "description": "Specific printer to send jobs to"
+  },
+  {
+   "fieldname": "printer_group",
+   "fieldtype": "Link",
+   "label": "Printer Group",
+   "options": "Printer Group",
+   "description": "Use a group for failover. Overridden by Printer if both set."
+  },
+  {
+   "fieldname": "section_options",
+   "fieldtype": "Section Break",
+   "label": "Print Options"
+  },
+  {
+   "default": "1",
+   "fieldname": "copies",
+   "fieldtype": "Int",
+   "label": "Copies"
+  },
+  {
+   "fieldname": "copies_from_field",
+   "fieldtype": "Data",
+   "label": "Copies from Field",
+   "description": "Fieldname on the document to read copy count from (overrides Copies)"
+  },
+  {
+   "fieldname": "col_break_opts",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "duplex",
+   "fieldtype": "Select",
+   "label": "Duplex",
+   "options": "\nNone\nLong Edge\nShort Edge"
+  },
+  {
+   "fieldname": "color_mode",
+   "fieldtype": "Select",
+   "label": "Color Mode",
+   "options": "\nColor\nMonochrome"
+  },
+  {
+   "fieldname": "paper_size",
+   "fieldtype": "Select",
+   "label": "Paper Size",
+   "options": "\nA4\nA5\nLetter\nLegal\nCustom"
+  },
+  {
+   "fieldname": "tray",
+   "fieldtype": "Data",
+   "label": "Tray"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_raw",
+   "fieldtype": "Check",
+   "label": "Raw / Thermal (ESC/POS, ZPL)"
+  },
+  {
+   "fieldname": "section_auto",
+   "fieldtype": "Section Break",
+   "label": "Auto Print"
+  },
+  {
+   "default": "Off",
+   "fieldname": "auto_print_on",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Auto Print On",
+   "options": "Off\nOn Submit\nOn Workflow State"
+  },
+  {
+   "depends_on": "eval:doc.auto_print_on == 'On Workflow State'",
+   "fieldname": "workflow_state",
+   "fieldtype": "Data",
+   "label": "Workflow State"
+  }
+ ],
+ "links": [],
+ "modified": "2026-01-01 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Print Bridge",
+ "name": "Print Format Print Setting",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "Print Manager",
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "print_format",
+ "track_changes": 1
+}

@@ -1,0 +1,228 @@
+{
+ "actions": [],
+ "autoname": "format:PJ-{YYYY}-{#####}",
+ "creation": "2026-01-01 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "reference_doctype",
+  "reference_name",
+  "print_format",
+  "status",
+  "col_break1",
+  "requested_by",
+  "requested_at",
+  "transport",
+  "section_target",
+  "target_printer",
+  "target_printer_group",
+  "agent",
+  "section_options",
+  "copies",
+  "duplex",
+  "color_mode",
+  "col_break_opts",
+  "paper_size",
+  "tray",
+  "is_raw",
+  "section_tracking",
+  "idempotency_key",
+  "attempts",
+  "col_break_tracking",
+  "rendered_file",
+  "error_message"
+ ],
+ "fields": [
+  {
+   "fieldname": "reference_doctype",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Reference DocType",
+   "options": "DocType",
+   "reqd": 1
+  },
+  {
+   "fieldname": "reference_name",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "label": "Reference Name",
+   "options": "reference_doctype",
+   "reqd": 1
+  },
+  {
+   "fieldname": "print_format",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Print Format",
+   "options": "Print Format"
+  },
+  {
+   "default": "Queued",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Queued\nRendering\nReady\nPrinting\nCompleted\nFailed\nHeld\nExpired\nCancelled",
+   "read_only": 1
+  },
+  {
+   "fieldname": "col_break1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "requested_by",
+   "fieldtype": "Link",
+   "label": "Requested By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "requested_at",
+   "fieldtype": "Datetime",
+   "label": "Requested At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "transport",
+   "fieldtype": "Select",
+   "label": "Transport Used",
+   "options": "agent\ncups_direct\nraw_socket\ncloud_ipp\nbrowser_qz",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_target",
+   "fieldtype": "Section Break",
+   "label": "Target"
+  },
+  {
+   "fieldname": "target_printer",
+   "fieldtype": "Link",
+   "label": "Target Printer",
+   "options": "Print Bridge Printer"
+  },
+  {
+   "fieldname": "target_printer_group",
+   "fieldtype": "Link",
+   "label": "Target Printer Group",
+   "options": "Printer Group"
+  },
+  {
+   "fieldname": "agent",
+   "fieldtype": "Link",
+   "label": "Agent",
+   "options": "Print Agent"
+  },
+  {
+   "fieldname": "section_options",
+   "fieldtype": "Section Break",
+   "label": "Print Options"
+  },
+  {
+   "default": "1",
+   "fieldname": "copies",
+   "fieldtype": "Int",
+   "label": "Copies"
+  },
+  {
+   "fieldname": "duplex",
+   "fieldtype": "Select",
+   "label": "Duplex",
+   "options": "\nNone\nLong Edge\nShort Edge"
+  },
+  {
+   "fieldname": "color_mode",
+   "fieldtype": "Select",
+   "label": "Color Mode",
+   "options": "\nColor\nMonochrome"
+  },
+  {
+   "fieldname": "col_break_opts",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "paper_size",
+   "fieldtype": "Select",
+   "label": "Paper Size",
+   "options": "\nA4\nA5\nLetter\nLegal\nCustom"
+  },
+  {
+   "fieldname": "tray",
+   "fieldtype": "Data",
+   "label": "Tray"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_raw",
+   "fieldtype": "Check",
+   "label": "Raw / Thermal"
+  },
+  {
+   "fieldname": "section_tracking",
+   "fieldtype": "Section Break",
+   "label": "Tracking"
+  },
+  {
+   "fieldname": "idempotency_key",
+   "fieldtype": "Data",
+   "label": "Idempotency Key",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "attempts",
+   "fieldtype": "Int",
+   "label": "Attempts",
+   "read_only": 1
+  },
+  {
+   "fieldname": "col_break_tracking",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "rendered_file",
+   "fieldtype": "Attach",
+   "label": "Rendered File",
+   "read_only": 1
+  },
+  {
+   "fieldname": "error_message",
+   "fieldtype": "Text",
+   "label": "Error Message",
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-01-01 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Print Bridge",
+ "name": "Print Job",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Print Manager",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "All"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "reference_name",
+ "track_changes": 1
+}

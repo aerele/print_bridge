@@ -1,0 +1,178 @@
+{
+ "actions": [],
+ "autoname": "field:printer_name",
+ "creation": "2026-01-01 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "printer_name",
+  "display_name",
+  "transport",
+  "status",
+  "col_break1",
+  "agent",
+  "last_seen",
+  "is_raw_capable",
+  "section_conn",
+  "printer_uri",
+  "section_scope",
+  "company",
+  "branch",
+  "section_caps",
+  "supports_color",
+  "supports_duplex",
+  "col_break_caps",
+  "supported_media_sizes",
+  "supported_trays",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "printer_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Printer Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "display_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Display Name"
+  },
+  {
+   "default": "agent",
+   "fieldname": "transport",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Transport",
+   "options": "agent\ncups_direct\nraw_socket\ncloud_ipp\nbrowser_qz",
+   "reqd": 1
+  },
+  {
+   "default": "Unknown",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Online\nOffline\nError\nUnknown",
+   "read_only": 1
+  },
+  {
+   "fieldname": "col_break1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.transport == 'agent'",
+   "fieldname": "agent",
+   "fieldtype": "Link",
+   "label": "Print Agent",
+   "options": "Print Agent"
+  },
+  {
+   "fieldname": "last_seen",
+   "fieldtype": "Datetime",
+   "label": "Last Seen",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_raw_capable",
+   "fieldtype": "Check",
+   "label": "Raw / Thermal Capable"
+  },
+  {
+   "fieldname": "section_conn",
+   "fieldtype": "Section Break",
+   "label": "Connection"
+  },
+  {
+   "depends_on": "eval:doc.transport != 'agent' && doc.transport != 'browser_qz'",
+   "fieldname": "printer_uri",
+   "fieldtype": "Data",
+   "label": "Printer URI",
+   "description": "e.g. ipp://printer.local/ipp/print or socket://192.168.1.100:9100"
+  },
+  {
+   "fieldname": "section_scope",
+   "fieldtype": "Section Break",
+   "label": "Scope"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company"
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "label": "Branch / Cost Center",
+   "options": "Cost Center"
+  },
+  {
+   "fieldname": "section_caps",
+   "fieldtype": "Section Break",
+   "label": "Capabilities"
+  },
+  {
+   "default": "0",
+   "fieldname": "supports_color",
+   "fieldtype": "Check",
+   "label": "Supports Color"
+  },
+  {
+   "default": "0",
+   "fieldname": "supports_duplex",
+   "fieldtype": "Check",
+   "label": "Supports Duplex"
+  },
+  {
+   "fieldname": "col_break_caps",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "supported_media_sizes",
+   "fieldtype": "Small Text",
+   "label": "Supported Media Sizes (JSON)"
+  },
+  {
+   "fieldname": "supported_trays",
+   "fieldtype": "Small Text",
+   "label": "Supported Trays (JSON)"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
+ ],
+ "links": [],
+ "modified": "2026-01-01 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Print Bridge",
+ "name": "Print Bridge Printer",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Print Manager"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "display_name",
+ "track_changes": 1
+}

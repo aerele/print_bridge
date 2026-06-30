@@ -1,0 +1,169 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-01-01 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "priority",
+  "is_active",
+  "col_break1",
+  "section_match",
+  "doctype_name",
+  "print_format",
+  "col_break_match",
+  "company",
+  "branch",
+  "warehouse",
+  "user",
+  "role",
+  "section_field_cond",
+  "field_condition_fieldname",
+  "field_condition_operator",
+  "field_condition_value",
+  "section_target",
+  "printer",
+  "printer_group"
+ ],
+ "fields": [
+  {
+   "default": "10",
+   "fieldname": "priority",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Priority",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Active"
+  },
+  {
+   "fieldname": "col_break1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_match",
+   "fieldtype": "Section Break",
+   "label": "Match Conditions"
+  },
+  {
+   "fieldname": "doctype_name",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "DocType",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "print_format",
+   "fieldtype": "Link",
+   "label": "Print Format",
+   "options": "Print Format"
+  },
+  {
+   "fieldname": "col_break_match",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company"
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Link",
+   "label": "Branch / Cost Center",
+   "options": "Cost Center"
+  },
+  {
+   "fieldname": "warehouse",
+   "fieldtype": "Link",
+   "label": "Warehouse",
+   "options": "Warehouse"
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "User",
+   "options": "User"
+  },
+  {
+   "fieldname": "role",
+   "fieldtype": "Link",
+   "label": "Role",
+   "options": "Role"
+  },
+  {
+   "fieldname": "section_field_cond",
+   "fieldtype": "Section Break",
+   "label": "Field Condition (Optional)"
+  },
+  {
+   "fieldname": "field_condition_fieldname",
+   "fieldtype": "Data",
+   "label": "Field Name"
+  },
+  {
+   "default": "=",
+   "fieldname": "field_condition_operator",
+   "fieldtype": "Select",
+   "label": "Operator",
+   "options": "=\n!=\n>\n<\n>=\n<="
+  },
+  {
+   "fieldname": "field_condition_value",
+   "fieldtype": "Data",
+   "label": "Value"
+  },
+  {
+   "fieldname": "section_target",
+   "fieldtype": "Section Break",
+   "label": "Target"
+  },
+  {
+   "fieldname": "printer",
+   "fieldtype": "Link",
+   "label": "Printer",
+   "options": "Print Bridge Printer"
+  },
+  {
+   "fieldname": "printer_group",
+   "fieldtype": "Link",
+   "label": "Printer Group",
+   "options": "Printer Group"
+  }
+ ],
+ "links": [],
+ "modified": "2026-01-01 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Print Bridge",
+ "name": "Print Routing Rule",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "Print Manager",
+   "write": 1
+  }
+ ],
+ "sort_field": "priority",
+ "sort_order": "ASC",
+ "states": [],
+ "track_changes": 1
+}

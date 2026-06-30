@@ -1,0 +1,76 @@
+{
+ "actions": [],
+ "creation": "2026-01-01 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "default_transport",
+  "render_timeout",
+  "job_ttl_hours",
+  "max_retry_attempts",
+  "section_migration",
+  "migrate_network_printer_settings"
+ ],
+ "fields": [
+  {
+   "default": "agent",
+   "fieldname": "default_transport",
+   "fieldtype": "Select",
+   "label": "Default Transport",
+   "options": "agent\ncups_direct\nraw_socket\ncloud_ipp\nbrowser_qz",
+   "reqd": 1
+  },
+  {
+   "default": "30",
+   "fieldname": "render_timeout",
+   "fieldtype": "Int",
+   "label": "Render Timeout (seconds)"
+  },
+  {
+   "default": "24",
+   "fieldname": "job_ttl_hours",
+   "fieldtype": "Int",
+   "label": "Job TTL (hours)"
+  },
+  {
+   "default": "3",
+   "fieldname": "max_retry_attempts",
+   "fieldtype": "Int",
+   "label": "Max Retry Attempts"
+  },
+  {
+   "fieldname": "section_migration",
+   "fieldtype": "Section Break",
+   "label": "Migration"
+  },
+  {
+   "default": "0",
+   "fieldname": "migrate_network_printer_settings",
+   "fieldtype": "Check",
+   "label": "Migrate Existing Network Printer Settings on Install"
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-01-01 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Print Bridge",
+ "name": "Print Bridge Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 0
+}
