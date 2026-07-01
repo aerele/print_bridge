@@ -14,6 +14,11 @@
 4. [First-Time Setup](#4-first-time-setup)
    - 4.1 [Configure Global Settings](#41-configure-global-settings)
    - 4.2 [Create a Print Agent (for cloud / hosted sites)](#42-create-a-print-agent-for-cloud--hosted-sites)
+     - 4.2.1 [Create the agent record and token](#421-create-the-agent-record-and-token)
+     - 4.2.2 [Prepare the office machine](#422-prepare-the-office-machine)
+     - 4.2.3 [Find your CUPS server (macOS / Ubuntu / Windows)](#423-find-your-cups-server-macos--ubuntu--windows)
+     - 4.2.4 [Install and run with Docker](#424-install-and-run-with-docker)
+     - 4.2.5 [Run and verify](#425-run-and-verify)
    - 4.3 [Register Printers](#43-register-printers)
    - 4.4 [Create Printer Groups (optional)](#44-create-printer-groups-optional)
 5. [Mapping Print Formats to Printers](#5-mapping-print-formats-to-printers)
@@ -83,7 +88,7 @@ A small daemon (the **Print Agent**) runs inside your office. It dials *out* to 
 3. An RQ background worker renders the document to PDF (or raw bytes)
 4. The rendered file is saved as a private attachment
 5. The transport driver delivers it:
-   - **agent** → file sits as `Ready`; the office daemon polls, downloads, and spools to local CUPS
+   - **agent** → file sits as `Ready`; the office daemon polls, downloads, and spools to local CUPS. If the machine or printer is offline the job simply waits in `Ready` until it returns (it is never failed or expired)
    - **cups\_direct / raw\_socket / cloud\_ipp** → server delivers directly
    - **browser\_qz** → a realtime event opens the PDF in the user's browser
 6. Status flows back to `Completed` (or `Failed` with an error message)
@@ -135,7 +140,7 @@ Go to: **Print Bridge > Print Bridge Settings**
 |---|---|---|
 | Default Transport | Which driver to use when no printer-specific transport is set | `agent` |
 | Render Timeout (seconds) | How long the PDF renderer may run before being killed | `30` |
-| Job TTL (hours) | Jobs older than this are marked `Expired` and will not print | `24` |
+| Job TTL (hours) | Jobs older than this are marked `Expired` and will not print (agent jobs *waiting* in `Ready` are exempt — they hold until the machine/printer returns) | `24` |
 | Max Retry Attempts | How many times a failed job is automatically retried | `3` |
 | Migrate Network Printer Settings | Import existing printers from the old doctype on next migrate | Off |
 
@@ -145,62 +150,233 @@ For most sites the defaults are fine. Change **Default Transport** to `cups_dire
 
 ### 4.2 Create a Print Agent (for cloud / hosted sites)
 
-A **Print Agent** is the office-side daemon that bridges your cloud bench to your LAN printers. You need one per office (or one per isolated printer group for HA).
+A **Print Agent** is the office-side daemon that bridges your cloud bench to your
+LAN printers. You need one per office (or one per isolated printer group for HA).
+It talks to CUPS through the standard `lp` / `lpstat` commands — **no pycups
+build required** — and every connection is outbound-only (HTTPS/443), so no
+static IP, port forwarding, or VPN is needed.
 
-**Step 1 — Create the agent record in Frappe Desk**
+The agent lives in the `agent/` folder of this repo (Python package
+`print-bridge-agent`). It ships as a **Docker** image you build locally from the
+included `Dockerfile` — this guide uses Docker throughout, which bundles Python,
+the agent, and the CUPS client so the only thing you install on the office
+machine is Docker itself.
 
-Go to: **Print Bridge > Print Agent > New**
+> Throughout, replace `<bench-url>` with your site (e.g.
+> `https://your-site.frappe.cloud`, or `http://localhost:8000` for a local
+> bench) and `<token>` with the token from step 4.2.1. `<bench>` means your bench
+> directory, so the agent source is `<bench>/apps/print_bridge/agent`.
 
-Fill in:
-- **Agent ID** — auto-generated, leave as is
-- **Display Name** — e.g. `Bangalore Office Agent`
-- **Location** — e.g. `Bangalore HQ`
+---
 
-Save the record.
+#### 4.2.1 Create the agent record and token
 
-**Step 2 — Generate a token**
+1. Go to **Print Bridge > Print Agent > New** and fill in:
+   - **Agent ID** — auto-generated, leave as is
+   - **Display Name** — e.g. `Bangalore Office Agent`
+   - **Location** — e.g. `Bangalore HQ`
+   Save the record.
+2. Click **Generate Token** on the saved record.
 
-Click the **Generate Token** button on the saved record.
+> The plain-text token is shown **once**. Copy it immediately — it cannot be
+> retrieved again. The app stores only its SHA-256 hash.
 
-> A plain-text token is shown **once**. Copy it immediately — it cannot be retrieved again. The app stores only the SHA-256 hash.
+---
 
-**Step 3 — Install the agent on an office machine**
+#### 4.2.2 Prepare the office machine
 
-The agent is a small daemon (source: `agent/` in this repo, package name
-`print-bridge-agent`). It talks to CUPS through the standard `lp`/`lpstat`
-commands — **no pycups build required**. It needs to run on a machine that:
-- Is always on (PC, Raspberry Pi, NAS, mini-PC, or a container)
-- Is on the same local network as your printers, with CUPS client tools
-  installed and the printer added to CUPS with a working driver
-  (verify: `lpstat -e` and `echo hi | lp -d <queue>`)
-- Can reach the internet on port 443
+The agent runs in Docker, but it prints through a **CUPS server that runs on the
+host** (or elsewhere on your LAN) — the container itself only carries the CUPS
+*client*. So the office machine must be **always on**, on the **same LAN as your
+printers**, able to reach the bench on port 443, and running a **CUPS server with
+at least one printer**. The agent only ever prints to, and syncs, the queues that
+CUPS reports.
+
+> **The single most common cause of "no printers synced":** the host has no CUPS
+> server (`cupsd`) running, or no printer added. Then `lpstat -e` returns nothing
+> and the agent syncs **zero printers** even though it shows `Online`.
+
+On Debian / Ubuntu (for macOS and Windows, see
+[4.2.3](#423-find-your-cups-server-macos--ubuntu--windows)):
 
 ```bash
-# Docker (recommended)
-#   CUPS_SERVER points lp at the LAN CUPS server (host IP); or use --network host.
-docker run -d --restart=always \
-  -e BENCH_URL=https://your-site.frappe.cloud \
-  -e AGENT_TOKEN=<paste-token-here> \
-  -e CUPS_SERVER=192.168.1.10 \
-  aerele/print-bridge-agent:latest
+# Install the CUPS server (not just the client). printer-driver-cups-pdf adds a
+# virtual "PDF" printer, handy for testing without physical hardware.
+sudo apt install cups printer-driver-cups-pdf
 
-# Or with pip (Python 3.8+)
-pip install print-bridge-agent
-print-bridge-agent start \
-  --url https://your-site.frappe.cloud \
-  --token <paste-token-here>
+# Make sure the CUPS daemon is running and starts on boot
+sudo systemctl enable --now cups
 
-# Or as a systemd service — see agent/README.md for the unit file and all options.
+# Let your user manage/print (log out and back in, or run `newgrp lpadmin`)
+sudo usermod -aG lpadmin "$USER"
 ```
 
-**Step 4 — Verify**
+Add a printer — either a real one via the CUPS web UI at
+**http://localhost:631 → Administration → Add Printer** (give it a working
+driver), or rely on the virtual `PDF` queue from `cups-pdf` for testing. Then
+verify a queue exists and prints:
 
-Back in Frappe, refresh the `Print Agent` record. Within 30 seconds:
-- `Status` should change to `Online`
-- `Last Heartbeat` should update
-- `Version` should show the agent's version
+```bash
+lpstat -e                 # must list at least one queue, e.g. "PDF"
+echo "hi" | lp -d PDF     # a test job (the PDF printer writes to ~/PDF/)
+```
 
-If the agent discovered local CUPS printers automatically, they appear in **Print Bridge Printer** with `Transport = agent`.
+If `lpstat -e` prints nothing, stop and fix CUPS here first — the agent cannot
+sync a printer that CUPS does not report.
+
+---
+
+#### 4.2.3 Find your CUPS server (macOS / Ubuntu / Windows)
+
+The agent container carries only the CUPS *client*; it prints by talking to a
+CUPS *server* somewhere on your network. The `CUPS_SERVER` environment variable
+tells the container **which machine's CUPS to use**.
+
+> **Format matters:** `CUPS_SERVER` must be `host[:port]` — e.g. `localhost:631`
+> or `192.168.1.10:631`. It is **not** a URL: do **not** write
+> `http://localhost:631` (a common mistake that leaves the agent unable to see
+> any printers). Also note `--network host` works fully **only on Linux**; on
+> Docker Desktop (macOS/Windows) use `host.docker.internal` instead.
+
+Where CUPS lives on each OS, and what to pass:
+
+| OS | Runs CUPS? | Where to find / enable it | `CUPS_SERVER` value |
+|---|---|---|---|
+| **Ubuntu / Linux** | Yes (`cupsd`) | Web UI `http://localhost:631`; **Settings → Printers**; list queues with `lpstat -e` | With `--network host`: **omit it** (defaults to `localhost:631`). From another host: `<machine-lan-ip>:631` |
+| **macOS** | Yes (CUPS is built in) | Enable the web UI once with `cupsctl WebInterface=yes`, then `http://localhost:631`; **System Settings → Printers & Scanners** | Docker Desktop has no `--network host` → use `host.docker.internal:631` (CUPS on the Mac), or `<lan-ip>:631` for another box |
+| **Windows** | **No** — Windows has no native CUPS | Windows uses its own print spooler, which the agent cannot drive | Run CUPS on a Linux/macOS machine on the LAN and point at it: `<cups-host-ip>:631` |
+
+> **Windows note:** because Windows has no CUPS, you cannot print to a
+> Windows-attached printer directly through the agent. Either run the agent (and
+> CUPS) on a small Linux box / Raspberry Pi that shares the printer, or add the
+> printer to a CUPS server on another machine and point `CUPS_SERVER` at it.
+
+---
+
+#### 4.2.4 Install and run with Docker
+
+**Step 1 — Install Docker**
+
+```bash
+# Linux
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $USER
+newgrp docker
+docker run hello-world        # verify Docker works
+```
+
+On macOS / Windows, install **Docker Desktop** from docker.com instead, then run
+`docker run hello-world` to verify.
+
+**Step 2 — Build the image**
+
+The image is not published to Docker Hub, so build it once from the included
+`Dockerfile`:
+
+```bash
+cd <bench>/apps/print_bridge/agent
+docker build -t print-bridge-agent .
+```
+
+**Step 3 — Run the container**
+
+Pick the variant that matches your OS (see
+[4.2.3](#423-find-your-cups-server-macos--ubuntu--windows) for how to choose the
+`CUPS_SERVER` value):
+
+**Linux — CUPS on the same machine** (use `--network host`, no `CUPS_SERVER`):
+
+```bash
+docker run -d --restart=always --name pbagent --network host \
+  -e BENCH_URL=<bench-url> \
+  -e AGENT_TOKEN=<token> \
+  print-bridge-agent
+```
+
+**macOS / Windows, or CUPS on another host** (`--network host` is unavailable, so
+name the server explicitly):
+
+```bash
+docker run -d --restart=always --name pbagent \
+  -e BENCH_URL=<bench-url> \
+  -e AGENT_TOKEN=<token> \
+  -e CUPS_SERVER=host.docker.internal:631 \
+  print-bridge-agent
+```
+
+What the flags mean:
+- **`-d`** — run in the background (detached).
+- **`--restart=always`** — bring the agent back after a crash or a reboot.
+- **`--name pbagent`** — a memorable name for the commands below.
+- **`-e BENCH_URL=` / `-e AGENT_TOKEN=`** — your site URL and the token from
+  step 4.2.1.
+- **`-e CUPS_SERVER=`** — the CUPS server as `host[:port]` (no `http://`). Omit
+  it when using `--network host` on Linux; set it to `host.docker.internal:631`
+  on Docker Desktop, or `<ip>:631` for CUPS on another machine.
+
+> A local bench at `http://localhost:8000` is **not** reachable from inside a
+> Docker Desktop container as `localhost` — use `http://host.docker.internal:8000`
+> for `BENCH_URL` on macOS/Windows. On Linux with `--network host`, `localhost`
+> works.
+
+**Step 4 — Manage the container**
+
+```bash
+docker ps                    # is it running?
+docker logs -f pbagent       # watch the agent's logs
+docker restart pbagent       # restart (e.g. after adding a printer)
+docker stop pbagent          # stop
+docker rm pbagent            # remove
+```
+
+**Step 5 — Update to a newer agent**
+
+```bash
+cd <bench>/apps/print_bridge/agent
+docker build -t print-bridge-agent .
+docker stop pbagent && docker rm pbagent
+# then re-run the `docker run ...` command from Step 3
+```
+
+---
+
+#### 4.2.5 Run and verify
+
+On startup the agent registers, discovers your local CUPS printers, and begins
+polling. Watch its log with `docker logs -f pbagent` — you should see lines like:
+
+```
+print-bridge-agent v0.1.0 → <bench-url>
+synced 1 local printer(s): PDF
+```
+
+> `synced 0 local printer(s): (none)` means the container reached no CUPS queues
+> — check §4.2.2 (printer added?) and §4.2.3 (`CUPS_SERVER` format / networking).
+
+Then, back in Frappe:
+
+- **Print Bridge > Print Agent** — `Status` flips to `Online` and `Last
+  Heartbeat` updates within ~30 seconds; `Version` shows the agent's version.
+- **Print Bridge > Print Bridge Printer** — each discovered printer appears with
+  `Transport = agent` and `Status = Online`.
+
+Send a test print from any document; it should come out on the local printer.
+
+> **Printer discovery/sync runs only at agent startup** — the periodic heartbeat
+> only updates the *status* of printers it already knows. So if you add a printer
+> to CUPS **after** the container started, run `docker restart pbagent` to sync it.
+
+**Configuration environment variables** (all passed with `-e` on `docker run`):
+
+| Flag | Env var | Default | Purpose |
+|---|---|---|---|
+| `--url` | `BENCH_URL` | — | Bench base URL (required) |
+| `--token` | `AGENT_TOKEN` | — | Agent token (required) |
+| `--interval` | `POLL_INTERVAL` | `5` | Seconds between polls |
+| `--name` | `AGENT_NAME` | — | Optional display name |
+| `--location` | `AGENT_LOCATION` | — | Optional location |
+| `--agent-id` | `AGENT_ID` | — | Optional; enables the `register` call |
+| `--log-level` | `LOG_LEVEL` | `INFO` | Logging level (`DEBUG` for verbose) |
 
 ---
 
@@ -395,13 +571,22 @@ Go to: **Print Bridge > Print Job**
 |---|---|
 | `Queued` | Job created, waiting for an RQ worker to pick it up |
 | `Rendering` | Worker is generating the PDF / raw bytes |
-| `Ready` | Rendered file is ready; waiting for agent to pull (agent transport) or browser event sent |
-| `Printing` | Agent has downloaded the file and is sending it to the printer |
+| `Ready` | Rendered file is ready; waiting for agent to pull (agent transport) or browser event sent. **Agent jobs hold here indefinitely** until *both* the agent machine and the target printer are Online — see the note below |
+| `Printing` | Agent has claimed the job and is sending it to the printer |
 | `Completed` | Printer confirmed success |
 | `Failed` | All retry attempts exhausted; check the Error Message field |
-| `Held` | Manually paused — will not be dispatched until released |
-| `Expired` | Job was queued too long (older than TTL); it will not print |
+| `Held` | **Manually** paused — will not be dispatched until released. This is distinct from an agent job *waiting* in `Ready` (automatic) |
+| `Expired` | Job was queued too long (older than TTL); it will not print. **Agent jobs waiting in `Ready` are exempt** and are never expired |
 | `Cancelled` | Manually cancelled by a user |
+
+> **Hold-until-available (agent transport).** If the office machine or the
+> target printer is **off**, an agent job does **not** fail or expire — it stays
+> in `Ready` and waits. `poll_jobs` only hands a job to the agent when the target
+> printer's status is `Online`, so a job for an offline printer simply waits. The
+> moment the next heartbeat marks the printer `Online` again (machine back up,
+> printer powered on), the job is claimed and printed automatically. A job that
+> was claimed (`Printing`) but whose agent then crashed is returned to `Ready` by
+> a 15-minute lease reaper so it is not lost.
 
 ### Actions on a Print Job
 
@@ -424,12 +609,19 @@ Go to: **Print Bridge > Print Job**
 
 **How it works:**
 - The bench renders the PDF and marks the job `Ready`
-- The Print Agent inside your office polls the bench every few seconds
-- It finds the `Ready` job and downloads the PDF from a token-authenticated
-  endpoint (`download_job_file`), sending its `X-Agent-Token` header — the file
-  itself stays private and is never exposed by a public URL
-- It sends the file to the local CUPS queue
-- It reports `Completed` or `Failed` back to the bench
+- The Print Agent inside your office polls the bench every few seconds, sending a
+  heartbeat with the live status of each local printer just before it polls
+- The bench hands out a `Ready` job **only when its target printer is `Online`**.
+  If the printer (or the whole machine) is off, the job stays `Ready` and waits —
+  it is never failed or expired (see *Hold-until-available* in Section 8)
+- The agent downloads the PDF from a token-authenticated endpoint
+  (`download_job_file`), sending its `X-Agent-Token` header — the file itself
+  stays private and is never exposed by a public URL
+- It sends the file to the local CUPS queue and confirms the job actually printed
+- It reports `Completed` back to the bench. If it finds the printer went offline
+  before or during printing, it **releases the job back to `Ready`** (to wait and
+  reprint when the printer returns) instead of marking it `Failed`. A genuine
+  error with the printer still online is reported as `Failed`
 
 **Requirements:**
 - One always-on machine in the office running the Print Agent daemon
@@ -588,13 +780,25 @@ Go to **Print Bridge > Print Job**, open the failed job.
 | Job stuck in `Rendering` | wkhtmltopdf / Chromium crashed | Check Frappe error logs; increase Render Timeout in settings |
 | `No wkhtmltopdf executable found` on render | A Print Format is set to the `wkhtmltopdf` generator but it is not installed | Install `wkhtmltopdf`, or set the Print Format's **PDF Generator** field to `chrome` (the app default) |
 | Chrome / Chromium errors on render | Google Chrome / Chromium not installed on the bench server | Install Chrome/Chromium, or set the Print Format's **PDF Generator** to `wkhtmltopdf` and install that instead |
-| Job stuck in `Ready` for agent | Agent is offline or not polling | Check agent status and logs |
+| Job waiting in `Ready` for agent | **Expected** if the machine or printer is off — the job is *held* and will print automatically when both are back `Online`. Only a problem if the Print Agent **and** the printer both already show `Online` | If both show `Online`, check the agent process/logs; otherwise no action needed — it is waiting by design |
+
+### Agent (Docker) installation and setup errors
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| Agent shows `Online` but `synced 0 local printer(s)` | The host CUPS has no printer queue, **or** `CUPS_SERVER` is malformed so the container reached no CUPS | Add a printer and confirm `lpstat -e` lists it (see [Section 4.2.2](#422-prepare-the-office-machine)); make sure `CUPS_SERVER` is `host[:port]` (see [Section 4.2.3](#423-find-your-cups-server-macos--ubuntu--windows)); then `docker restart pbagent` (sync runs only at startup) |
+| Jobs stay `Ready`, never print; agent can't reach CUPS | Container isn't pointed at a reachable CUPS server | Linux: add `--network host` (and omit `CUPS_SERVER`); macOS/Windows: `-e CUPS_SERVER=host.docker.internal:631`; CUPS on another box: `-e CUPS_SERVER=<ip>:631` |
+| `CUPS_SERVER=http://…` has no effect | libcups expects `host[:port]`, not a URL | Drop the `http://` scheme — e.g. `localhost:631` or `192.168.1.10:631` |
+| Agent can't connect to the bench (`BENCH_URL`) | On Docker Desktop, `localhost` points at the container, not the host | Use `http://host.docker.internal:8000` for a local bench on macOS/Windows; on Linux use `--network host` so `localhost` works |
+| Printer added but agent still doesn't see it | Discovery/sync happens only at startup | `docker restart pbagent` to re-sync |
 
 ### Scheduler and worker health
 
 Print Bridge requires:
 - At least one RQ worker on the `short` queue for rendering and dispatching
-- The Frappe scheduler running for heartbeat checks and TTL expiry
+- The Frappe scheduler running for heartbeat checks, TTL expiry, and the
+  stuck-`Printing` reclaim (a 15-minute lease returns a claimed job to `Ready` if
+  its agent died mid-print, so it is retried instead of lost)
 
 ```bash
 # Check workers
@@ -797,9 +1001,9 @@ All require header: `X-Agent-Token: <your-token>`
 |---|---|---|---|
 | `register` | POST | `agent_id`, `display_name`, `location`, `version` | Agent announces itself on startup |
 | `heartbeat` | POST | `version`, `printer_statuses` (JSON) | Periodic keep-alive + status update |
-| `poll_jobs` | GET | — | Fetch pending jobs for this agent's printers (each job includes a `file_url` pointing at `download_job_file`) |
+| `poll_jobs` | GET | — | Fetch pending jobs for this agent's printers **that are currently `Online`** (each job includes a `file_url` pointing at `download_job_file`); claiming a job moves it `Ready → Printing` |
 | `download_job_file` | GET | `job_name` | Stream the rendered file for a job; only returns files for jobs that belong to the calling agent |
-| `update_job_status` | POST | `job_name`, `status`, `error` | Report job outcome (rejected if the job does not belong to this agent) |
+| `update_job_status` | POST | `job_name`, `status`, `error` | Report job outcome. Allowed values: `Completed`, `Failed`, or `Ready` (release a claimed job back to waiting — accepted only when the job is currently `Printing`). Rejected if the job does not belong to this agent |
 | `sync_printers` | POST | `printers` (JSON list) | Push discovered local printers into the registry |
 
 ---
@@ -820,7 +1024,10 @@ Then check **Print Bridge > Print Bridge Printer** for new records.
 Yes. Create two Print Agent records, install the agent daemon twice (on two machines), and add printers from both agents to the same Printer Group with `Round Robin` or `Priority` strategy.
 
 **Q: What happens if the agent goes offline while jobs are queued?**
-Jobs remain in `Queued` or `Ready` status. When the agent reconnects, it polls and picks them up. If a job's TTL expires while the agent is offline, it is marked `Expired` and will not print — this prevents stale documents printing hours later.
+The jobs **hold** in `Ready` and wait. When the agent reconnects (and the printer is back `Online`), it polls and picks them up automatically. Agent jobs waiting in `Ready` are **not** expired by the TTL — they wait indefinitely until the machine and printer return, so nothing is silently dropped during an outage. (The TTL still applies to jobs genuinely stuck in `Queued`/`Rendering`, and to non-agent transports.)
+
+**Q: A job is sitting in `Ready` and my printer shows `Offline` — is my printer really off?**
+Not necessarily. The Print Bridge Printer is only marked `Online` while the agent is **running and sending heartbeats**. If the agent is stopped, the heartbeat reaper marks the agent and its printers `Offline` after ~5 minutes — even though the physical printer is fine. Start the agent; on its next heartbeat the printer flips back to `Online` and the waiting job prints. To check the printer's *real* state, run `lpstat -p <queue>` on the agent machine.
 
 **Q: Can I use Print Bridge with raw ESC/POS / ZPL printers?**
 Yes. Use `raw_socket` transport, set the Printer URI to `socket://IP:9100`, and enable **Raw / Thermal Capable** on the printer and **Raw / Thermal** on the Print Format Print Setting. Your print format's Jinja template must emit the raw command bytes directly.
