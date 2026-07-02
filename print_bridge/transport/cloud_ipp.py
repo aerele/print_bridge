@@ -1,5 +1,7 @@
 """Cloud IPP transport — for internet-reachable IPP-Everywhere printers."""
+
 import frappe
+
 from print_bridge.transport.base import BaseTransport
 
 
@@ -20,11 +22,16 @@ class CloudIppTransport(BaseTransport):
 		if job_doc.copies and job_doc.copies > 1:
 			options["copies"] = str(job_doc.copies)
 		if job_doc.duplex and job_doc.duplex != "None":
-			options["sides"] = "two-sided-long-edge" if job_doc.duplex == "Long Edge" else "two-sided-short-edge"
+			options["sides"] = (
+				"two-sided-long-edge" if job_doc.duplex == "Long Edge" else "two-sided-short-edge"
+			)
 
-		import tempfile, os
+		import os
+		import tempfile
+
 		with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as f:
 			f.write(file_content)
+			f.flush()
 			tmp_path = f.name
 		try:
 			conn.printFile(printer_uri, tmp_path, f"PrintBridge-{job_doc.name}", options)

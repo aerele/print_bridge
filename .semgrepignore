@@ -1,0 +1,23 @@
+# Semgrep ignore patterns.
+#
+# A project-level .semgrepignore replaces semgrep's built-in defaults, so the
+# common vendored/generated paths are listed explicitly below to keep them out
+# of the scan.
+
+# --- Vendored / generated paths ---
+node_modules/
+build/
+dist/
+vendor/
+.git/
+.venv/
+env/
+.tox/
+.mypy_cache/
+*.min.js
+
+# --- Project-specific accepted findings ---
+# Print Job intentionally grants the "All" role read+create so any desk user can
+# submit and view their own print jobs; the relaxed-permissions finding on this
+# doctype is accepted (see PR discussion).
+print_bridge/print_bridge/doctype/print_job/print_job.json

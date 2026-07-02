@@ -11,17 +11,19 @@ frappe.ui.form.on("Print Job", {
 		const status = frm.doc.status;
 
 		// Reprint — available for any status (creates a brand-new job).
-		frm.add_custom_button(__("Reprint"), () => print_bridge_job_action(frm, "reprint", {
-			reload: false,
-			done: (r) => {
-				if (r.message && r.message.job) {
-					frappe.show_alert({
-						message: __("Reprint queued: {0}", [r.message.job]),
-						indicator: "green",
-					});
-				}
-			},
-		}));
+		frm.add_custom_button(__("Reprint"), () =>
+			print_bridge_job_action(frm, "reprint", {
+				reload: false,
+				done: (r) => {
+					if (r.message && r.message.job) {
+						frappe.show_alert({
+							message: __("Reprint queued: {0}", [r.message.job]),
+							indicator: "green",
+						});
+					}
+				},
+			})
+		);
 
 		// Hold — only Queued or Ready jobs can be held.
 		if (["Queued", "Ready"].includes(status)) {
@@ -37,8 +39,8 @@ frappe.ui.form.on("Print Job", {
 		if (!["Completed", "Cancelled"].includes(status)) {
 			frm.add_custom_button(__("Cancel"), () =>
 				frappe.confirm(__("Cancel this print job? It will never be printed."), () =>
-					print_bridge_job_action(frm, "cancel_job"),
-				),
+					print_bridge_job_action(frm, "cancel_job")
+				)
 			);
 		}
 	},

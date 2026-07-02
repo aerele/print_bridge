@@ -25,8 +25,15 @@ def _authenticate_agent():
 	return frappe.get_doc("Print Agent", agent_name)
 
 
-@frappe.whitelist(allow_guest=True)
-def register(agent_id, display_name=None, location=None, version=None):
+# Token-authenticated agent endpoint: the agent has no Frappe session and
+# authenticates via the X-Agent-Token header, so guest access is required.
+@frappe.whitelist(allow_guest=True)  # nosemgrep
+def register(
+	agent_id: str,
+	display_name: str | None = None,
+	location: str | None = None,
+	version: str | None = None,
+):
 	"""Called by a fresh agent with its token to register / re-register."""
 	agent = _authenticate_agent()
 	if agent.agent_id != agent_id:
@@ -38,27 +45,38 @@ def register(agent_id, display_name=None, location=None, version=None):
 	return {"status": "ok", "agent": agent.name}
 
 
-@frappe.whitelist(allow_guest=True)
-def heartbeat(version=None, printer_statuses=None):
+# Token-authenticated agent endpoint: the agent has no Frappe session and
+# authenticates via the X-Agent-Token header, so guest access is required.
+@frappe.whitelist(allow_guest=True)  # nosemgrep
+def heartbeat(version: str | None = None, printer_statuses: str | dict | None = None):
 	"""Agent heartbeat. Also accepts printer status updates."""
 	agent = _authenticate_agent()
 	agent.update_heartbeat(version=version)
 
 	if printer_statuses:
 		import json
+
 		statuses = json.loads(printer_statuses) if isinstance(printer_statuses, str) else printer_statuses
 		for printer_name, status in statuses.items():
-			printer = frappe.db.get_value("Print Bridge Printer", {"printer_name": printer_name, "agent": agent.name})
+			printer = frappe.db.get_value(
+				"Print Bridge Printer", {"printer_name": printer_name, "agent": agent.name}
+			)
 			if printer:
-				frappe.db.set_value("Print Bridge Printer", printer, {
-					"status": status,
-					"last_seen": now_datetime(),
-				})
-	frappe.db.commit()
+				frappe.db.set_value(
+					"Print Bridge Printer",
+					printer,
+					{
+						"status": status,
+						"last_seen": now_datetime(),
+					},
+				)
+	frappe.db.commit()  # nosemgrep - commit agent-visible state before returning to the remote agent
 	return {"status": "ok"}
 
 
-@frappe.whitelist(allow_guest=True)
+# Token-authenticated agent endpoint: the agent has no Frappe session and
+# authenticates via the X-Agent-Token header, so guest access is required.
+@frappe.whitelist(allow_guest=True)  # nosemgrep
 def poll_jobs():
 	"""Agent polls for jobs targeting its printers. Returns a list of pending jobs."""
 	agent = _authenticate_agent()
@@ -89,12 +107,14 @@ def poll_jobs():
 		result.append({**job, "file_url": signed_url})
 		frappe.db.set_value("Print Job", job["name"], "status", "Printing")
 
-	frappe.db.commit()
+	frappe.db.commit()  # nosemgrep - commit agent-visible state before returning to the remote agent
 	return {"jobs": result}
 
 
-@frappe.whitelist(allow_guest=True)
-def update_job_status(job_name, status, error=None):
+# Token-authenticated agent endpoint: the agent has no Frappe session and
+# authenticates via the X-Agent-Token header, so guest access is required.
+@frappe.whitelist(allow_guest=True)  # nosemgrep
+def update_job_status(job_name: str, status: str, error: str | None = None):
 	"""Agent reports the final status of a job."""
 	agent = _authenticate_agent()
 	# An agent may only report a terminal result or release a claimed job back to
@@ -116,12 +136,14 @@ def update_job_status(job_name, status, error=None):
 		return {"status": "ignored"}
 
 	job.set_status(status, error=error)
-	frappe.db.commit()
+	frappe.db.commit()  # nosemgrep - commit agent-visible state before returning to the remote agent
 	return {"status": "ok"}
 
 
-@frappe.whitelist(allow_guest=True)
-def download_job_file(job_name):
+# Token-authenticated agent endpoint: the agent has no Frappe session and
+# authenticates via the X-Agent-Token header, so guest access is required.
+@frappe.whitelist(allow_guest=True)  # nosemgrep
+def download_job_file(job_name: str):
 	"""Stream the rendered file for a job to the authenticated agent.
 
 	The agent has no Frappe session cookie, so it cannot fetch the private
@@ -130,9 +152,7 @@ def download_job_file(job_name):
 	"""
 	agent = _authenticate_agent()
 
-	job = frappe.db.get_value(
-		"Print Job", job_name, ["agent", "rendered_file"], as_dict=True
-	)
+	job = frappe.db.get_value("Print Job", job_name, ["agent", "rendered_file"], as_dict=True)
 	if not job:
 		frappe.throw(_("Print Job {0} not found").format(job_name))
 	if job.agent and job.agent != agent.name:
@@ -148,10 +168,13 @@ def download_job_file(job_name):
 	frappe.local.response.type = "download"
 
 
-@frappe.whitelist(allow_guest=True)
-def sync_printers(printers):
+# Token-authenticated agent endpoint: the agent has no Frappe session and
+# authenticates via the X-Agent-Token header, so guest access is required.
+@frappe.whitelist(allow_guest=True)  # nosemgrep
+def sync_printers(printers: str | list):
 	"""Agent pushes its discovered local printers into the registry."""
 	import json
+
 	agent = _authenticate_agent()
 	printers_data = json.loads(printers) if isinstance(printers, str) else printers
 
@@ -168,21 +191,23 @@ def sync_printers(printers):
 			existing.last_seen = now_datetime()
 			existing.save(ignore_permissions=True)
 		else:
-			new_printer = frappe.get_doc({
-				"doctype": "Print Bridge Printer",
-				"printer_name": printer_name,
-				"display_name": p.get("display_name", printer_name),
-				"transport": "agent",
-				"agent": agent.name,
-				"supports_color": p.get("supports_color", 0),
-				"supports_duplex": p.get("supports_duplex", 0),
-				"status": "Online",
-				"last_seen": now_datetime(),
-			})
+			new_printer = frappe.get_doc(
+				{
+					"doctype": "Print Bridge Printer",
+					"printer_name": printer_name,
+					"display_name": p.get("display_name", printer_name),
+					"transport": "agent",
+					"agent": agent.name,
+					"supports_color": p.get("supports_color", 0),
+					"supports_duplex": p.get("supports_duplex", 0),
+					"status": "Online",
+					"last_seen": now_datetime(),
+				}
+			)
 			new_printer.insert(ignore_permissions=True)
 			created.append(printer_name)
 
-	frappe.db.commit()
+	frappe.db.commit()  # nosemgrep - commit agent-visible state before returning to the remote agent
 	return {"status": "ok", "created": created}
 
 
@@ -195,6 +220,5 @@ def _get_signed_file_url(job_name):
 	if not file_path:
 		return None
 	return frappe.utils.get_url(
-		"/api/method/print_bridge.api.agent.download_job_file?job_name="
-		+ frappe.utils.quote(job_name)
+		"/api/method/print_bridge.api.agent.download_job_file?job_name=" + frappe.utils.quote(job_name)
 	)

@@ -15,4 +15,5 @@ class PrintBridgePrinter(Document):
 
 	def get_transport_driver(self):
 		from print_bridge.transport import get_driver
+
 		return get_driver(self.transport)

@@ -98,7 +98,7 @@ def build_lp_args(job):
 
 def submit(printer, filepath, job):
 	"""Submit the file to CUPS via `lp`; return the CUPS job id (e.g. 'CanonOffice-12')."""
-	args = ["lp", "-d", printer] + build_lp_args(job) + [filepath]
+	args = ["lp", "-d", printer, *build_lp_args(job), filepath]
 	result = _run(args)
 	if result.returncode != 0:
 		raise RuntimeError(f"lp failed: {(result.stderr or result.stdout).strip() or 'unknown error'}")
@@ -142,8 +142,8 @@ def confirm_printed(printer, cups_job_id, timeout=_CONFIRM_TIMEOUT_SECONDS):
 		time.sleep(_POLL_INTERVAL_SECONDS)
 
 
-def _job_ids(args):
-	result = _run(args)
+def _job_ids(lpstat_args):
+	result = _run(lpstat_args)
 	ids = []
 	for line in result.stdout.splitlines():
 		parts = line.split()

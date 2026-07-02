@@ -168,14 +168,14 @@ def _setting_to_dict(s):
 def _global_defaults():
 	settings = frappe.get_single("Print Bridge Settings")
 	return {
-		"action": "Download PDF",
-		"printer": None,
-		"printer_group": None,
-		"copies": 1,
-		"duplex": None,
-		"color_mode": None,
-		"paper_size": None,
-		"tray": None,
-		"is_raw": 0,
-		"auto_print_on": "Off",
+		"action": settings.get("action") or "Download PDF",
+		"printer": settings.get("printer"),
+		"printer_group": settings.get("printer_group"),
+		"copies": settings.get("copies") or 1,
+		"duplex": settings.get("duplex"),
+		"color_mode": settings.get("color_mode"),
+		"paper_size": settings.get("paper_size"),
+		"tray": settings.get("tray"),
+		"is_raw": settings.get("is_raw") or 0,
+		"auto_print_on": settings.get("auto_print_on") or "Off",
 	}

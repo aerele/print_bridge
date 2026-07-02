@@ -43,10 +43,7 @@ def _render_pdf(job_doc, timeout=30):
 	# format does not set one — this also covers the built-in "Standard" format.
 	import shutil
 
-	pdf_generator = (
-		frappe.get_cached_value("Print Format", job_doc.print_format, "pdf_generator")
-		or "chrome"
-	)
+	pdf_generator = frappe.get_cached_value("Print Format", job_doc.print_format, "pdf_generator") or "chrome"
 	# Fall back to whichever engine is actually installed: a format may ask for
 	# wkhtmltopdf on a bench that only ships Chrome (or vice versa).
 	if pdf_generator == "wkhtmltopdf" and not shutil.which("wkhtmltopdf"):

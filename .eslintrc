@@ -25,6 +25,7 @@
 	},
 	"root": true,
 	"globals": {
+		"print_bridge": true,
 		"frappe": true,
 		"Vue": true,
 		"SetVueGlobals": true,

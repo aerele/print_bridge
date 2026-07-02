@@ -9,7 +9,7 @@ frappe.ui.form.on("Print Agent", {
 
 		frm.add_custom_button(
 			frm.doc.token_hash ? __("Regenerate Token") : __("Generate Token"),
-			() => print_bridge_generate_token(frm),
+			() => print_bridge_generate_token(frm)
 		);
 
 		if (frm.doc.token_hash) {
@@ -26,9 +26,8 @@ function print_bridge_generate_token(frm) {
 				title: __("Agent Token"),
 				indicator: "orange",
 				message: __(
-					"Copy this token now — it is shown only once and cannot be retrieved again." +
-						"<br><br><b>{0}</b><br><br>Paste it into the agent configuration on the office machine.",
-					[frappe.utils.escape_html(r.message)],
+					"Copy this token now — it is shown only once and cannot be retrieved again.<br><br><b>{0}</b><br><br>Paste it into the agent configuration on the office machine.",
+					[frappe.utils.escape_html(r.message)]
 				),
 			});
 			frm.reload_doc();
@@ -38,9 +37,9 @@ function print_bridge_generate_token(frm) {
 	if (frm.doc.token_hash) {
 		frappe.confirm(
 			__(
-				"This will invalidate the current token. Any running agent using it will stop working until you update it. Continue?",
+				"This will invalidate the current token. Any running agent using it will stop working until you update it. Continue?"
 			),
-			proceed,
+			proceed
 		);
 	} else {
 		proceed();
@@ -50,13 +49,13 @@ function print_bridge_generate_token(frm) {
 function print_bridge_revoke_token(frm) {
 	frappe.confirm(
 		__(
-			"Revoke the current token? The agent will be rejected on its next request until a new token is generated.",
+			"Revoke the current token? The agent will be rejected on its next request until a new token is generated."
 		),
 		() => {
 			frm.call("revoke_token").then(() => {
 				frappe.show_alert({ message: __("Token revoked"), indicator: "red" });
 				frm.reload_doc();
 			});
-		},
+		}
 	);
 }

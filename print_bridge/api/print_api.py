@@ -6,26 +6,25 @@ import frappe
 from frappe import _
 from frappe.utils import add_to_date, now_datetime
 
-
 # Window within which an identical request is treated as a duplicate and deduped.
 _DEDUPE_WINDOW_SECONDS = 120
 
 
 @frappe.whitelist()
 def enqueue_print_job(
-	reference_doctype,
-	reference_name,
-	print_format=None,
-	printer=None,
-	printer_group=None,
-	copies=1,
-	duplex=None,
-	color_mode=None,
-	paper_size=None,
-	tray=None,
-	is_raw=0,
-	action=None,
-	force=0,
+	reference_doctype: str,
+	reference_name: str,
+	print_format: str | None = None,
+	printer: str | None = None,
+	printer_group: str | None = None,
+	copies: int = 1,
+	duplex: str | None = None,
+	color_mode: str | None = None,
+	paper_size: str | None = None,
+	tray: str | None = None,
+	is_raw: int = 0,
+	action: str | None = None,
+	force: int = 0,
 ):
 	"""Create a Print Job and dispatch it to the render worker."""
 	frappe.has_permission(reference_doctype, doc=reference_name, throw=True)
@@ -50,7 +49,11 @@ def enqueue_print_job(
 				f"&format={frappe.utils.quote(print_format or '')}"
 			)
 			return {"action": "download_pdf", "url": pdf_url}
-		frappe.throw(_("Could not resolve a printer for this document. Configure a Print Format Print Setting or Routing Rule."))
+		frappe.throw(
+			_(
+				"Could not resolve a printer for this document. Configure a Print Format Print Setting or Routing Rule."
+			)
+		)
 
 	# Deterministic key so accidental double-submits of the same request collapse,
 	# while intentional reprints (force=1) always create a fresh job.
@@ -73,26 +76,28 @@ def enqueue_print_job(
 
 	printer_doc = frappe.get_doc("Print Bridge Printer", printer)
 
-	job = frappe.get_doc({
-		"doctype": "Print Job",
-		"reference_doctype": reference_doctype,
-		"reference_name": reference_name,
-		"print_format": print_format,
-		"target_printer": printer,
-		"target_printer_group": printer_group,
-		"agent": printer_doc.agent if printer_doc.transport == "agent" else None,
-		"copies": int(copies),
-		"duplex": duplex,
-		"color_mode": color_mode,
-		"paper_size": paper_size,
-		"tray": tray,
-		"is_raw": int(is_raw),
-		"transport": printer_doc.transport,
-		"idempotency_key": idempotency_key,
-		"status": "Queued",
-	})
+	job = frappe.get_doc(
+		{
+			"doctype": "Print Job",
+			"reference_doctype": reference_doctype,
+			"reference_name": reference_name,
+			"print_format": print_format,
+			"target_printer": printer,
+			"target_printer_group": printer_group,
+			"agent": printer_doc.agent if printer_doc.transport == "agent" else None,
+			"copies": int(copies),
+			"duplex": duplex,
+			"color_mode": color_mode,
+			"paper_size": paper_size,
+			"tray": tray,
+			"is_raw": int(is_raw),
+			"transport": printer_doc.transport,
+			"idempotency_key": idempotency_key,
+			"status": "Queued",
+		}
+	)
 	job.insert(ignore_permissions=True)
-	frappe.db.commit()
+	frappe.db.commit()  # nosemgrep - commit the queued job before handing off to the render worker
 
 	frappe.enqueue(
 		"print_bridge.utils.jobs.render_and_dispatch",
@@ -105,9 +110,14 @@ def enqueue_print_job(
 
 
 @frappe.whitelist()
-def get_print_settings_for_format(print_format=None, reference_doctype=None, reference_name=None):
+def get_print_settings_for_format(
+	print_format: str | None = None,
+	reference_doctype: str | None = None,
+	reference_name: str | None = None,
+):
 	"""Return the resolved print settings for a given format (used by the UI dialog)."""
 	from print_bridge.utils.resolver import resolve_settings
+
 	settings = resolve_settings(
 		print_format=print_format,
 		reference_doctype=reference_doctype,
@@ -117,7 +127,7 @@ def get_print_settings_for_format(print_format=None, reference_doctype=None, ref
 
 
 @frappe.whitelist()
-def get_jobs(reference_doctype=None, reference_name=None, limit=20):
+def get_jobs(reference_doctype: str | None = None, reference_name: str | None = None, limit: int = 20):
 	"""Return recent print jobs, optionally filtered to a document."""
 	filters = {}
 	if reference_doctype:
@@ -133,16 +143,25 @@ def get_jobs(reference_doctype=None, reference_name=None, limit=20):
 	return frappe.db.get_all(
 		"Print Job",
 		filters=filters,
-		fields=["name", "status", "target_printer", "copies", "requested_at", "requested_by", "error_message"],
+		fields=[
+			"name",
+			"status",
+			"target_printer",
+			"copies",
+			"requested_at",
+			"requested_by",
+			"error_message",
+		],
 		order_by="requested_at desc",
 		limit=int(limit),
 	)
 
 
 @frappe.whitelist()
-def batch_print(jobs):
+def batch_print(jobs: str | list):
 	"""Enqueue multiple print jobs from a list-view selection."""
 	import json
+
 	jobs_data = json.loads(jobs) if isinstance(jobs, str) else jobs
 	results = []
 	for job_params in jobs_data:
@@ -156,7 +175,8 @@ def batch_print(jobs):
 
 def _resolve_printer(reference_doctype, reference_name, print_format):
 	"""Try routing rules first, then print format settings."""
-	from print_bridge.utils.resolver import resolve_via_routing_rules, resolve_settings
+	from print_bridge.utils.resolver import resolve_settings, resolve_via_routing_rules
+
 	routing_result = resolve_via_routing_rules(
 		reference_doctype=reference_doctype,
 		reference_name=reference_name,
