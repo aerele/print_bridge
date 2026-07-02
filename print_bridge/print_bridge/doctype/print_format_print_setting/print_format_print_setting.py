@@ -9,4 +9,6 @@ class PrintFormatPrintSetting(Document):
 		if self.auto_print_on == "On Workflow State" and not self.workflow_state:
 			frappe.throw(frappe._("Workflow State is required when Auto Print On is 'On Workflow State'."))
 		if self.copies_from_field and self.copies and self.copies != 1:
-			frappe.msgprint(frappe._("Copies from Field will override the static Copies value at print time."), alert=True)
+			frappe.msgprint(
+				frappe._("Copies from Field will override the static Copies value at print time."), alert=True
+			)

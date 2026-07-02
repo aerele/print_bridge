@@ -16,6 +16,7 @@ class PrintJob(Document):
 	def reprint(self):
 		"""Enqueue this job again as a new Print Job."""
 		from print_bridge.api.print_api import enqueue_print_job
+
 		return enqueue_print_job(
 			reference_doctype=self.reference_doctype,
 			reference_name=self.reference_name,
@@ -48,9 +49,11 @@ class PrintJob(Document):
 		# first; otherwise just re-dispatch the already-rendered file.
 		if self.rendered_file:
 			from print_bridge.utils.jobs import dispatch_job
+
 			frappe.enqueue(dispatch_job, print_job=self.name, queue="short")
 		else:
 			from print_bridge.utils.jobs import render_and_dispatch
+
 			frappe.enqueue(render_and_dispatch, print_job=self.name, queue="short", timeout=300)
 
 	@frappe.whitelist()

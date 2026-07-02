@@ -1,4 +1,5 @@
 """Agent transport — jobs are queued to Ready status; the agent polls and pulls them."""
+
 from print_bridge.transport.base import BaseTransport
 
 

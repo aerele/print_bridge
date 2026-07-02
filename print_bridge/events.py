@@ -23,8 +23,20 @@ def _trigger_auto_print(doc, trigger, workflow_state=None):
 	formats = frappe.db.get_all(
 		"Print Format Print Setting",
 		filters={"auto_print_on": trigger},
-		fields=["print_format", "auto_print_on", "workflow_state", "printer", "printer_group",
-		        "copies", "copies_from_field", "duplex", "color_mode", "paper_size", "tray", "is_raw"],
+		fields=[
+			"print_format",
+			"auto_print_on",
+			"workflow_state",
+			"printer",
+			"printer_group",
+			"copies",
+			"copies_from_field",
+			"duplex",
+			"color_mode",
+			"paper_size",
+			"tray",
+			"is_raw",
+		],
 	)
 
 	for fmt in formats:
@@ -45,6 +57,7 @@ def _trigger_auto_print(doc, trigger, workflow_state=None):
 
 		try:
 			from print_bridge.api.print_api import enqueue_print_job
+
 			enqueue_print_job(
 				reference_doctype=doc.doctype,
 				reference_name=doc.name,

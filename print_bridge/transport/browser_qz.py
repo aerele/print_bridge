@@ -4,7 +4,9 @@ For desk / USB printing. When selected, the job is rendered and stored; the
 Frappe desk UI picks up the Ready status and triggers QZ Tray (or the browser
 print dialog) via a realtime event. No server-to-printer network path needed.
 """
+
 import frappe
+
 from print_bridge.transport.base import BaseTransport
 
 

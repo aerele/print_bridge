@@ -23,6 +23,7 @@ def render_and_dispatch(print_job):
 
 	try:
 		from print_bridge.utils.renderer import render_job
+
 		content = render_job(job_doc)
 	except Exception as e:
 		_handle_failure(job_doc, e, max_attempts)
@@ -30,6 +31,7 @@ def render_and_dispatch(print_job):
 
 	try:
 		from print_bridge.transport import get_driver
+
 		printer_doc = frappe.get_doc("Print Bridge Printer", job_doc.target_printer)
 		driver = get_driver(printer_doc.transport)
 		driver.deliver(job_doc, content)
@@ -52,6 +54,7 @@ def dispatch_job(print_job):
 	try:
 		content = _load_rendered_file(job_doc)
 		from print_bridge.transport import get_driver
+
 		printer_doc = frappe.get_doc("Print Bridge Printer", job_doc.target_printer)
 		driver = get_driver(printer_doc.transport)
 		driver.deliver(job_doc, content)

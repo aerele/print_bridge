@@ -1,7 +1,9 @@
 """Direct CUPS transport — for LAN benches that can reach the printer directly."""
+
 import time
 
 import frappe
+
 from print_bridge.transport.base import BaseTransport
 
 # How long to wait for CUPS to confirm the job actually printed before failing it.
@@ -29,7 +31,9 @@ class CupsDirectTransport(BaseTransport):
 
 		options = {}
 		if job_doc.duplex and job_doc.duplex != "None":
-			options["sides"] = "two-sided-long-edge" if job_doc.duplex == "Long Edge" else "two-sided-short-edge"
+			options["sides"] = (
+				"two-sided-long-edge" if job_doc.duplex == "Long Edge" else "two-sided-short-edge"
+			)
 		if job_doc.color_mode:
 			options["print-color-mode"] = "color" if job_doc.color_mode == "Color" else "monochrome"
 		if job_doc.paper_size:
@@ -42,7 +46,9 @@ class CupsDirectTransport(BaseTransport):
 		printer_name = printer_doc.printer_name
 		title = f"PrintBridge-{job_doc.name}"
 
-		import tempfile, os
+		import os
+		import tempfile
+
 		with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as f:
 			f.write(file_content)
 			tmp_path = f.name

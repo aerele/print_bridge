@@ -98,7 +98,7 @@ def build_lp_args(job):
 
 def submit(printer, filepath, job):
 	"""Submit the file to CUPS via `lp`; return the CUPS job id (e.g. 'CanonOffice-12')."""
-	args = ["lp", "-d", printer] + build_lp_args(job) + [filepath]
+	args = ["lp", "-d", printer, *build_lp_args(job), filepath]
 	result = _run(args)
 	if result.returncode != 0:
 		raise RuntimeError(f"lp failed: {(result.stderr or result.stdout).strip() or 'unknown error'}")

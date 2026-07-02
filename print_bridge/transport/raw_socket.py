@@ -1,7 +1,9 @@
 """Raw socket transport — sends bytes directly to a printer socket (port 9100)."""
+
 import socket
 
 import frappe
+
 from print_bridge.transport.base import BaseTransport
 
 

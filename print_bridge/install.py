@@ -37,14 +37,16 @@ def _migrate_network_printer_settings():
 		if frappe.db.exists("Print Bridge Printer", printer_name):
 			continue
 		uri = f"socket://{lp.server_ip}:{lp.port or 9100}" if lp.server_ip else ""
-		new_p = frappe.get_doc({
-			"doctype": "Print Bridge Printer",
-			"printer_name": printer_name,
-			"display_name": printer_name,
-			"transport": "cups_direct" if not lp.server_ip else "raw_socket",
-			"printer_uri": uri,
-			"status": "Unknown",
-		})
+		new_p = frappe.get_doc(
+			{
+				"doctype": "Print Bridge Printer",
+				"printer_name": printer_name,
+				"display_name": printer_name,
+				"transport": "cups_direct" if not lp.server_ip else "raw_socket",
+				"printer_uri": uri,
+				"status": "Unknown",
+			}
+		)
 		new_p.insert(ignore_permissions=True)
 
 	if legacy:

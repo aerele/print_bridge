@@ -46,14 +46,21 @@ def heartbeat(version=None, printer_statuses=None):
 
 	if printer_statuses:
 		import json
+
 		statuses = json.loads(printer_statuses) if isinstance(printer_statuses, str) else printer_statuses
 		for printer_name, status in statuses.items():
-			printer = frappe.db.get_value("Print Bridge Printer", {"printer_name": printer_name, "agent": agent.name})
+			printer = frappe.db.get_value(
+				"Print Bridge Printer", {"printer_name": printer_name, "agent": agent.name}
+			)
 			if printer:
-				frappe.db.set_value("Print Bridge Printer", printer, {
-					"status": status,
-					"last_seen": now_datetime(),
-				})
+				frappe.db.set_value(
+					"Print Bridge Printer",
+					printer,
+					{
+						"status": status,
+						"last_seen": now_datetime(),
+					},
+				)
 	frappe.db.commit()
 	return {"status": "ok"}
 
@@ -130,9 +137,7 @@ def download_job_file(job_name):
 	"""
 	agent = _authenticate_agent()
 
-	job = frappe.db.get_value(
-		"Print Job", job_name, ["agent", "rendered_file"], as_dict=True
-	)
+	job = frappe.db.get_value("Print Job", job_name, ["agent", "rendered_file"], as_dict=True)
 	if not job:
 		frappe.throw(_("Print Job {0} not found").format(job_name))
 	if job.agent and job.agent != agent.name:
@@ -152,6 +157,7 @@ def download_job_file(job_name):
 def sync_printers(printers):
 	"""Agent pushes its discovered local printers into the registry."""
 	import json
+
 	agent = _authenticate_agent()
 	printers_data = json.loads(printers) if isinstance(printers, str) else printers
 
@@ -168,17 +174,19 @@ def sync_printers(printers):
 			existing.last_seen = now_datetime()
 			existing.save(ignore_permissions=True)
 		else:
-			new_printer = frappe.get_doc({
-				"doctype": "Print Bridge Printer",
-				"printer_name": printer_name,
-				"display_name": p.get("display_name", printer_name),
-				"transport": "agent",
-				"agent": agent.name,
-				"supports_color": p.get("supports_color", 0),
-				"supports_duplex": p.get("supports_duplex", 0),
-				"status": "Online",
-				"last_seen": now_datetime(),
-			})
+			new_printer = frappe.get_doc(
+				{
+					"doctype": "Print Bridge Printer",
+					"printer_name": printer_name,
+					"display_name": p.get("display_name", printer_name),
+					"transport": "agent",
+					"agent": agent.name,
+					"supports_color": p.get("supports_color", 0),
+					"supports_duplex": p.get("supports_duplex", 0),
+					"status": "Online",
+					"last_seen": now_datetime(),
+				}
+			)
 			new_printer.insert(ignore_permissions=True)
 			created.append(printer_name)
 
@@ -195,6 +203,5 @@ def _get_signed_file_url(job_name):
 	if not file_path:
 		return None
 	return frappe.utils.get_url(
-		"/api/method/print_bridge.api.agent.download_job_file?job_name="
-		+ frappe.utils.quote(job_name)
+		"/api/method/print_bridge.api.agent.download_job_file?job_name=" + frappe.utils.quote(job_name)
 	)

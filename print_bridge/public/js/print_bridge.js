@@ -19,9 +19,13 @@ frappe.ui.form.on("*", {
 	refresh(frm) {
 		if (frm.doc.docstatus === undefined || frm.doc.__islocal) return;
 
-		frm.add_custom_button(__("Print via Bridge"), () => {
-			print_bridge.open_print_dialog(frm);
-		}, __("Actions"));
+		frm.add_custom_button(
+			__("Print via Bridge"),
+			() => {
+				print_bridge.open_print_dialog(frm);
+			},
+			__("Actions")
+		);
 	},
 });
 
@@ -51,7 +55,7 @@ print_bridge.open_print_dialog = function (frm) {
 							return {
 								filters: { doc_type: frm.doctype },
 							};
-    					},
+						},
 					},
 					{
 						label: __("Printer"),

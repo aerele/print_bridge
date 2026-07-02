@@ -29,18 +29,12 @@ doc_events = {
 
 # ── Scheduled tasks ──────────────────────────────────────────────────────────
 scheduler_events = {
-	"all": [
-		"print_bridge.tasks.all"
-	],
-	"hourly": [
-		"print_bridge.tasks.hourly"
-	],
+	"all": ["print_bridge.tasks.all"],
+	"hourly": ["print_bridge.tasks.hourly"],
 }
 
 # ── Installation ──────────────────────────────────────────────────────────────
 after_install = "print_bridge.install.after_install"
 
 # ── Log TTL (Print Job audit records kept for 90 days by default) ─────────────
-default_log_clearing_doctypes = {
-	"Print Job": 90
-}
+default_log_clearing_doctypes = {"Print Job": 90}
