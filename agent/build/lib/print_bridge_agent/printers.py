@@ -142,8 +142,8 @@ def confirm_printed(printer, cups_job_id, timeout=_CONFIRM_TIMEOUT_SECONDS):
 		time.sleep(_POLL_INTERVAL_SECONDS)
 
 
-def _job_ids(args):
-	result = _run(args)
+def _job_ids(lpstat_args):
+	result = _run(lpstat_args)
 	ids = []
 	for line in result.stdout.splitlines():
 		parts = line.split()

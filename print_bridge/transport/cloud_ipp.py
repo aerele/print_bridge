@@ -31,6 +31,7 @@ class CloudIppTransport(BaseTransport):
 
 		with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as f:
 			f.write(file_content)
+			f.flush()
 			tmp_path = f.name
 		try:
 			conn.printFile(printer_uri, tmp_path, f"PrintBridge-{job_doc.name}", options)

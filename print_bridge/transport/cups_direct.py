@@ -51,6 +51,7 @@ class CupsDirectTransport(BaseTransport):
 
 		with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as f:
 			f.write(file_content)
+			f.flush()
 			tmp_path = f.name
 
 		try:

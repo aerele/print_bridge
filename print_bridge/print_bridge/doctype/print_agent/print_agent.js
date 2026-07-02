@@ -26,8 +26,7 @@ function print_bridge_generate_token(frm) {
 				title: __("Agent Token"),
 				indicator: "orange",
 				message: __(
-					"Copy this token now — it is shown only once and cannot be retrieved again." +
-						"<br><br><b>{0}</b><br><br>Paste it into the agent configuration on the office machine.",
+					"Copy this token now — it is shown only once and cannot be retrieved again.<br><br><b>{0}</b><br><br>Paste it into the agent configuration on the office machine.",
 					[frappe.utils.escape_html(r.message)]
 				),
 			});

@@ -43,7 +43,7 @@ def render_and_dispatch(print_job):
 		_handle_failure(job_doc, e, max_attempts)
 		return
 
-	frappe.db.commit()
+	frappe.db.commit()  # nosemgrep - persist job/agent state from background worker or scheduler
 
 
 def dispatch_job(print_job):
@@ -62,7 +62,7 @@ def dispatch_job(print_job):
 			job_doc.set_status("Completed")
 	except Exception as e:
 		job_doc.set_status("Failed", error=str(e))
-	frappe.db.commit()
+	frappe.db.commit()  # nosemgrep - persist job/agent state from background worker or scheduler
 
 
 def _handle_failure(job_doc, error, max_attempts):
@@ -76,7 +76,7 @@ def _handle_failure(job_doc, error, max_attempts):
 		)
 	else:
 		job_doc.set_status("Failed", error=str(error))
-	frappe.db.commit()
+	frappe.db.commit()  # nosemgrep - persist job/agent state from background worker or scheduler
 
 
 def _load_rendered_file(job_doc):
@@ -106,7 +106,7 @@ def expire_old_jobs():
 		frappe.db.set_value("Print Job", job.name, "status", "Expired")
 
 	if old_jobs:
-		frappe.db.commit()
+		frappe.db.commit()  # nosemgrep - persist job/agent state from background worker or scheduler
 
 
 def check_agent_heartbeats():
@@ -128,7 +128,7 @@ def check_agent_heartbeats():
 			frappe.db.set_value("Print Bridge Printer", p, "status", "Offline")
 
 	if stale:
-		frappe.db.commit()
+		frappe.db.commit()  # nosemgrep - persist job/agent state from background worker or scheduler
 
 
 def reclaim_stuck_printing_jobs():
@@ -151,4 +151,4 @@ def reclaim_stuck_printing_jobs():
 		frappe.db.set_value("Print Job", job_name, "status", "Ready")
 
 	if stuck:
-		frappe.db.commit()
+		frappe.db.commit()  # nosemgrep - persist job/agent state from background worker or scheduler

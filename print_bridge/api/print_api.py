@@ -12,19 +12,19 @@ _DEDUPE_WINDOW_SECONDS = 120
 
 @frappe.whitelist()
 def enqueue_print_job(
-	reference_doctype,
-	reference_name,
-	print_format=None,
-	printer=None,
-	printer_group=None,
-	copies=1,
-	duplex=None,
-	color_mode=None,
-	paper_size=None,
-	tray=None,
-	is_raw=0,
-	action=None,
-	force=0,
+	reference_doctype: str,
+	reference_name: str,
+	print_format: str | None = None,
+	printer: str | None = None,
+	printer_group: str | None = None,
+	copies: int = 1,
+	duplex: str | None = None,
+	color_mode: str | None = None,
+	paper_size: str | None = None,
+	tray: str | None = None,
+	is_raw: int = 0,
+	action: str | None = None,
+	force: int = 0,
 ):
 	"""Create a Print Job and dispatch it to the render worker."""
 	frappe.has_permission(reference_doctype, doc=reference_name, throw=True)
@@ -97,7 +97,7 @@ def enqueue_print_job(
 		}
 	)
 	job.insert(ignore_permissions=True)
-	frappe.db.commit()
+	frappe.db.commit()  # nosemgrep - commit the queued job before handing off to the render worker
 
 	frappe.enqueue(
 		"print_bridge.utils.jobs.render_and_dispatch",
@@ -110,7 +110,11 @@ def enqueue_print_job(
 
 
 @frappe.whitelist()
-def get_print_settings_for_format(print_format=None, reference_doctype=None, reference_name=None):
+def get_print_settings_for_format(
+	print_format: str | None = None,
+	reference_doctype: str | None = None,
+	reference_name: str | None = None,
+):
 	"""Return the resolved print settings for a given format (used by the UI dialog)."""
 	from print_bridge.utils.resolver import resolve_settings
 
@@ -123,7 +127,7 @@ def get_print_settings_for_format(print_format=None, reference_doctype=None, ref
 
 
 @frappe.whitelist()
-def get_jobs(reference_doctype=None, reference_name=None, limit=20):
+def get_jobs(reference_doctype: str | None = None, reference_name: str | None = None, limit: int = 20):
 	"""Return recent print jobs, optionally filtered to a document."""
 	filters = {}
 	if reference_doctype:
@@ -154,7 +158,7 @@ def get_jobs(reference_doctype=None, reference_name=None, limit=20):
 
 
 @frappe.whitelist()
-def batch_print(jobs):
+def batch_print(jobs: str | list):
 	"""Enqueue multiple print jobs from a list-view selection."""
 	import json
 
