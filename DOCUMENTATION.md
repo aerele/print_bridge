@@ -109,6 +109,12 @@ A small daemon (the **Print Agent**) runs inside your office. It dials *out* to 
   sets its **PDF Generator** field to `wkhtmltopdf` is honored when that binary is
   installed; if `wkhtmltopdf` is not on the server, Print Bridge automatically
   falls back to `chrome` so rendering still succeeds.
+- **A working CUPS driver/queue for each physical printer** (only for the `agent`
+  and `cups_direct` transports). Print Bridge hands the rendered file to CUPS and
+  lets CUPS drive the printer, so the printer must already print from CUPS.
+  Printers with **driverless IPP / IPP-Everywhere** need no extra driver; older
+  ones (e.g. many Canon PIXMA like the E470) need a driver package such as
+  `printer-driver-gutenprint` installed on the CUPS host. See §4.2.2.
 
 ### Install the app
 

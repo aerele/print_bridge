@@ -5,9 +5,15 @@ from frappe import _
 
 
 def after_install():
-	_create_print_manager_role()
-	_create_default_settings()
-	_migrate_network_printer_settings()
+	# Log a clear, titled error if setup fails, then re-raise so a broken install
+	# fails loudly instead of leaving the app half-configured and silent.
+	try:
+		_create_print_manager_role()
+		_create_default_settings()
+		_migrate_network_printer_settings()
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "Print Bridge after_install failed")
+		raise
 
 
 def _create_print_manager_role():

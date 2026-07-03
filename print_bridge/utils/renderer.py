@@ -1,7 +1,6 @@
 """Render a Print Format to PDF or raw bytes and attach to a Print Job."""
 
 import frappe
-from frappe.utils import get_files_path
 from frappe.utils.file_manager import save_file
 
 
