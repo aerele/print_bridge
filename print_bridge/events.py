@@ -18,8 +18,6 @@ def on_workflow_state_change(doc, method=None):
 
 
 def _trigger_auto_print(doc, trigger, workflow_state=None):
-	from print_bridge.utils.resolver import resolve_settings
-
 	formats = frappe.db.get_all(
 		"Print Format Print Setting",
 		filters={"auto_print_on": trigger},

@@ -49,7 +49,9 @@ def resolve_via_routing_rules(reference_doctype, reference_name, print_format):
 			doc = frappe.get_doc(reference_doctype, reference_name)
 			doc_values = doc.as_dict()
 		except Exception:
-			pass
+			# Routing still proceeds by matching on the fields we do have; log so a
+			# genuinely broken reference doesn't disappear without a trace.
+			frappe.log_error(frappe.get_traceback(), "Print Bridge routing: could not load reference doc")
 
 	user = frappe.session.user
 	user_roles = set(frappe.get_roles(user))
@@ -140,6 +142,7 @@ def _eval_operator(a, op, b):
 		if op == "<=":
 			return a_num <= b_num
 	except (ValueError, TypeError):
+		# Operands aren't both numeric — fall through to string comparison below.
 		pass
 	if op == "=":
 		return a == b
